@@ -1,6 +1,11 @@
 # Frank Chemotti
 # fchemotti@gmail.com
 
+# sample usage: 
+# chopsort('cloches07b', 5000, True, 50)
+# sorts cloches07b.wav by decreasing amplitude 
+# in chunks of 5000 samples with crossfaded edges of 50 samples
+
 import scipy.io.wavfile as wavfile
 import numpy as np
 
@@ -18,12 +23,12 @@ def shuffle(wave, c_size, index):
     wave -- numpy array of type int16, axis 0 should be length at least
            c_size * len(index), can have multiple channels (along axis 1)
     c_size -- int, size of chunks to be shuffled
-    index -- list of ints, index[i] = j means chunk i will be moved to chunk j
+    index -- list of ints, index[i] = j means chunk j will be moved to chunk i
     return -- numpy array with same shape as wave, contents shuffled
     '''
 
     wave_out = np.zeros(wave.shape, dtype='int16')
-    for index_in, index_out in enumerate(index):
+    for index_out, index_in in enumerate(index):
         wave_out[index_out * c_size: (index_out + 1) * c_size] = \
             wave[index_in * c_size: (index_in + 1) * c_size]
     return wave_out
@@ -34,7 +39,7 @@ def shuffle_faded(wave, c, index, w):
     wave - numpy array of type int16, axis 0 should be length at least
            c_size * len(index), can have multiple channels (along axis 1)
     c -- int, length of chunks to be shuffled
-    index -- list of ints, index[i] = j means chunk i will be moved to chunk j
+    index -- list of ints, index[i] = j means chunk j will be moved to chunk i
     w -- int, length of crossfaded edge, should be such that w < c
     return -- numpy array with almost same shape as wave, w extra samples are
              added to the end, contents shuffled
@@ -48,7 +53,7 @@ def shuffle_faded(wave, c, index, w):
     extra = np.zeros((w, ch), dtype='int16')
     wave2 = np.append(wave, extra, 0)
     wave_out = np.zeros(wave2.shape, dtype='int16')
-    for i_in, i_out in enumerate(index):
+    for i_out, i_in in enumerate(index):
         wave_out[i_out * c: i_out * c + c + w] += \
             window * wave2[i_in * c: i_in * c + c + w]
     return wave_out
@@ -60,7 +65,7 @@ def rms_rank(wave, c_size, desc):
     wave -- numpy array of type int16
     c_size -- int, size of chunks to measure and rank
     desc -- True or False for descending or ascending sort
-    return -- list of ints, list[i] = j means chunk i is ranked j 
+    return -- list of ints, list[i] = j means chunk j is ranked i 
               when sorted by rms'''
     
     n = len(wave) / c_size
@@ -78,10 +83,8 @@ def chopsort(name, c_size, desc, w):
     w -- int, length of crossfaded edges
     result -- writes wave file with shuffled data and modified file name'''
     rate, data = wavfile.read(name + '.wav')
-    ranks = rms_rank(data.sum(1), c_size, desc)
+    ranks = rms_rank(data.mean(1), c_size, desc)
     data_sort = shuffle_faded(data, c_size, ranks, w)
     order = 'd' if desc else 'a'
     file_out = name + str(c_size) + order + str(w) + '.wav'
     wavfile.write(file_out, rate, data_sort)
-
-chopsort('cloches07b', 8000, True, 50)
