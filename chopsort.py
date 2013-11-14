@@ -84,4 +84,4 @@ def chopsort(name, c_size, desc, w):
     file_out = name + str(c_size) + order + str(w) + '.wav'
     wavfile.write(file_out, rate, data_sort)
 
-# chopsort('cloches07b', 5000, True, 200)
+chopsort('cloches07b', 8000, True, 50)
